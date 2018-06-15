@@ -16,7 +16,7 @@ class NumbersListModel(private val numbers: ArrayList<NumberModel>){
     }
 
     fun getRandomNumbers(size: Int):List<NumberModel>{
-        val nums = numbers.shuffled().take(minOf(1,numbers.size))
+        val nums = numbers.shuffled().take(minOf(size,numbers.size))
         numbers.removeAll(nums)
         sizeObservable.onNext(numbers.size)
         return nums
@@ -29,5 +29,5 @@ class NumbersListModel(private val numbers: ArrayList<NumberModel>){
 
     fun isNotEmpty():Boolean = numbers.isNotEmpty()
 
-    val sizeObservable: ReplaySubject<Int> = ReplaySubject.create<Int>()
+    private val sizeObservable: ReplaySubject<Int> = ReplaySubject.create<Int>()
 }

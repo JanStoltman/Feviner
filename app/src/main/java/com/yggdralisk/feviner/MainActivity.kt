@@ -1,13 +1,11 @@
 package com.yggdralisk.feviner
 
-import android.content.Context
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.text.InputType
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import com.jakewharton.rxbinding2.view.RxView
 import com.jakewharton.rxbinding2.widget.RxRadioGroup
@@ -17,21 +15,25 @@ import com.yggdralisk.feviner.custom.ObservableVariable
 import com.yggdralisk.feviner.models.NumberModel
 import com.yggdralisk.feviner.models.NumbersListModel
 import com.yggdralisk.feviner.models.UserScore
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.concurrent.TimeUnit
-
+import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
     companion object {
         const val FETCH_SIZE = 20
-        val compositeDisposable = CompositeDisposable()
-        val userScore = UserScore()
-        val numbers = NumbersListModel(arrayListOf())
-        var observableNum = ObservableVariable<NumberModel?>(null)
+
     }
+
+    @Inject
+    lateinit var userScore: UserScore
+    val compositeDisposable = CompositeDisposable()
+    val numbers = NumbersListModel(arrayListOf())
+    var observableNum = ObservableVariable<NumberModel?>(null)
 
     override fun onDestroy() {
         if (compositeDisposable.isDisposed.not()) {
@@ -50,39 +52,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeObservers() {
-        compositeDisposable.addAll(
+      /*  compositeDisposable.addAll(
                 RxTextView.editorActions(answerEditText)
                         .subscribeOn(AndroidSchedulers.mainThread())
-                        .filter({ actionId -> actionId == EditorInfo.IME_ACTION_SEND })
-                        .subscribe({ confirmButton.callOnClick() }),
-
-                RxView.clicks(confirmButton)
-                        .throttleFirst(2, TimeUnit.SECONDS)
-                        .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ handleAnswer() }),
+                        .filter { actionId -> actionId == EditorInfo.IME_ACTION_SEND }
+                        .subscribe { confirmButton.callOnClick() },
 
                 RxRadioGroup.checkedChanges(chosingRadioGroup)
                         .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ handleModeChange(it) }),
+                        .subscribe { handleModeChange(it) },
 
-                RxView.clicks(showAnswerButton)
-                        .throttleFirst(2, TimeUnit.SECONDS)
-                        .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ showAnswer() }),
+                rxThrottledClicks(confirmButton)
+                        .subscribe { handleAnswer() },
 
-                RxView.clicks(menuFetchNumbers)
-                        .throttleFirst(2, TimeUnit.SECONDS)
-                        .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ fetchNumbers() }),
+                rxThrottledClicks(menuFetchNumbers)
+                        .subscribe { fetchNumbers() },
+
+                rxThrottledClicks(showAnswerButton)
+                        .subscribe { showAnswer() },
 
                 observableNum.observable
                         .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ num -> bindNewNumToView(num) }),
+                        .subscribe { num -> bindNewNumToView(num) },
 
                 numbers.sizeObservable
                         .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe({ s -> if (s < FETCH_SIZE.div(2)) fetchNumbers() })
-        )
+                        .subscribe { s -> if (s < FETCH_SIZE.div(2)) fetchNumbers() }
+        )*/
     }
 
     private fun showAnswer() {
@@ -105,9 +101,10 @@ class MainActivity : AppCompatActivity() {
                 setGameView(observableNum.value?.latinNumber ?: "", InputType.TYPE_CLASS_NUMBER)
             }
             R.id.chosingTextButton -> {
-                setGameView(observableNum.value?.arabicNumber?.toString() ?: "", InputType.TYPE_CLASS_TEXT)
+                setGameView(observableNum.value?.arabicNumber?.toString()
+                        ?: "", InputType.TYPE_CLASS_TEXT)
             }
-            else -> throw Exception("Unknown view in radio group ${it}")
+            else -> throw Exception("Unknown view in radio group: $it")
         }
     }
 
@@ -156,9 +153,11 @@ class MainActivity : AppCompatActivity() {
     private fun validateAnswer(): Boolean = observableNum.value?.validateAnswer(answerEditText.text, isAnswerAsNumModeActive())
             ?: false
 
-    private fun hideSoftKeyboard(v: View) = (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-            .hideSoftInputFromWindow(v.windowToken, 0)
-
     private fun isAnswerAsNumModeActive() = chosingNumberButton.isChecked
+
+    private fun rxThrottledClicks(view: View, throttleSeconds: Long = 2): Observable<Any> =
+            RxView.clicks(view)
+                    .throttleFirst(throttleSeconds, TimeUnit.SECONDS)
+                    .subscribeOn(AndroidSchedulers.mainThread())
 
 }
