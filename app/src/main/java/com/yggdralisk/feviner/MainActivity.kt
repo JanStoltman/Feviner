@@ -5,13 +5,11 @@ import android.support.v7.app.AppCompatActivity
 import android.text.InputType
 import android.view.View
 import android.view.animation.AnimationUtils
-import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import com.jakewharton.rxbinding2.view.RxView
-import com.jakewharton.rxbinding2.widget.RxRadioGroup
-import com.jakewharton.rxbinding2.widget.RxTextView
 import com.yggdralisk.feviner.api.calls.NumbersServiceCalls.Companion.getManyRandomNumbers
 import com.yggdralisk.feviner.custom.ObservableVariable
+import com.yggdralisk.feviner.dagger.components.DaggerMainActivityComponent
 import com.yggdralisk.feviner.models.NumberModel
 import com.yggdralisk.feviner.models.NumbersListModel
 import com.yggdralisk.feviner.models.UserScore
@@ -31,8 +29,8 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var userScore: UserScore
-    val compositeDisposable = CompositeDisposable()
-    val numbers = NumbersListModel(arrayListOf())
+     val compositeDisposable = CompositeDisposable()
+    private val numbers = NumbersListModel(arrayListOf())
     var observableNum = ObservableVariable<NumberModel?>(null)
 
     override fun onDestroy() {
@@ -44,6 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DaggerMainActivityComponent.create().inject(this@MainActivity)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
